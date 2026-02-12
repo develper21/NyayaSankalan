@@ -1,0 +1,546 @@
+// NyayaSankalan - Prisma Schema
+// Generated from DATABASE_SCHEMA.md (Single Source of Truth)
+// Do NOT modify without updating DATABASE_SCHEMA.md
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ====================================================
+// ENUMS
+// ====================================================
+
+enum UserRole {
+  POLICE
+  SHO
+  COURT_CLERK
+  JUDGE
+}
+
+enum OrganizationType {
+  POLICE_STATION
+  COURT
+}
+
+enum CourtType {
+  MAGISTRATE
+  SESSIONS
+  HIGH_COURT
+}
+
+enum FirSource {
+  POLICE
+  COURT_ORDER
+}
+
+enum CaseState {
+  FIR_REGISTERED
+  CASE_ASSIGNED
+  UNDER_INVESTIGATION
+  INVESTIGATION_PAUSED
+  INVESTIGATION_COMPLETED
+  CHARGE_SHEET_PREPARED
+  CLOSURE_REPORT_PREPARED
+  SUBMITTED_TO_COURT
+  RETURNED_FOR_DEFECTS
+  RESUBMITTED_TO_COURT
+  COURT_ACCEPTED
+  TRIAL_ONGOING
+  JUDGMENT_RESERVED
+  DISPOSED
+  APPEALED
+  ARCHIVED
+}
+
+enum AccusedStatus {
+  ARRESTED
+  ON_BAIL
+  ABSCONDING
+}
+
+enum EvidenceCategory {
+  PHOTO
+  REPORT
+  FORENSIC
+  STATEMENT
+}
+
+enum DocumentType {
+  CHARGE_SHEET
+  EVIDENCE_LIST
+  WITNESS_LIST
+  CLOSURE_REPORT
+  REMAND_APPLICATION
+}
+
+enum DocumentStatus {
+  DRAFT
+  FINAL
+  LOCKED
+}
+
+enum DocumentRequestType {
+  ARREST_WARRANT
+  SEARCH_WARRANT
+  REMAND_ORDER
+  CHARGE_SHEET_COPY
+  OTHER
+}
+
+enum DocumentRequestStatus {
+  REQUESTED
+  SHO_APPROVED
+  ISSUED
+  REJECTED
+}
+
+enum CaseReopenStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+}
+
+enum BailType {
+  POLICE
+  ANTICIPATORY
+  COURT
+}
+
+enum BailStatus {
+  APPLIED
+  GRANTED
+  REJECTED
+}
+
+enum CourtSubmissionStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  ACCEPTED
+  RETURNED
+}
+
+enum CourtActionType {
+  COGNIZANCE
+  CHARGES_FRAMED
+  HEARING
+  JUDGMENT
+  SENTENCE
+  ACQUITTAL
+  CONVICTION
+}
+
+enum InvestigationEventType {
+  SEARCH
+  SEIZURE
+  STATEMENT
+  TRANSFER
+  OTHER
+}
+
+// ====================================================
+// MODELS
+// ====================================================
+
+model User {
+  id               String           @id @default(uuid()) @db.Uuid
+  name             String
+  email            String           @unique
+  phone            String
+  role             UserRole
+  organizationType OrganizationType
+  organizationId   String
+  isActive         Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+
+  // Relations
+  firsRegistered         Fir[]                  @relation("FirRegisteredBy")
+  caseStateChanges       CaseStateHistory[]     @relation("StateChangedBy")
+  assignmentsGiven       CaseAssignment[]       @relation("AssignedBy")
+  assignmentsReceived    CaseAssignment[]       @relation("AssignedTo")
+  investigationEvents    InvestigationEvent[]   @relation("PerformedBy")
+  evidenceUploads        Evidence[]             @relation("UploadedBy")
+  documentsCreated       Document[]             @relation("CreatedBy")
+  documentRequestsCreated DocumentRequest[]     @relation("DocumentRequestsCreatedBy")
+  documentRequestsApproved DocumentRequest[]    @relation("DocumentRequestsApprovedBy")
+  documentRequestsIssued DocumentRequest[]      @relation("DocumentRequestsIssuedBy")
+  caseReopenRequestsRequested CaseReopenRequest[] @relation("CaseReopenRequestedBy")
+  caseReopenRequestsReviewed CaseReopenRequest[]  @relation("CaseReopenReviewedBy")
+  courtSubmissions       CourtSubmission[]      @relation("SubmittedBy")
+  auditLogs              AuditLog[]
+  accessLogs             AccessLog[]
+
+  @@index([organizationId])
+  @@index([role])
+  @@map("users")
+}
+
+model PoliceStation {
+  id       String @id @default(uuid()) @db.Uuid
+  name     String
+  district String
+  state    String
+
+  // Relations
+  firs Fir[]
+
+  @@map("police_stations")
+}
+
+model Court {
+  id        String    @id @default(uuid()) @db.Uuid
+  name      String
+  courtType CourtType
+  district  String
+  state     String
+
+  // Relations
+  courtSubmissions CourtSubmission[]
+
+  @@map("courts")
+}
+
+model Fir {
+  id              String    @id @default(uuid()) @db.Uuid
+  firNumber       String
+  firSource       FirSource
+  registeredBy    String    @db.Uuid
+  policeStationId String    @db.Uuid
+  incidentDate    DateTime
+  sectionsApplied String
+  firDocumentUrl  String
+  createdAt       DateTime  @default(now())
+
+  // Relations
+  user           User          @relation("FirRegisteredBy", fields: [registeredBy], references: [id])
+  policeStation  PoliceStation @relation(fields: [policeStationId], references: [id])
+  case           Case?
+
+  @@index([registeredBy])
+  @@index([policeStationId])
+  @@map("firs")
+}
+
+model Case {
+  id               String   @id @default(uuid()) @db.Uuid
+  firId            String   @unique @db.Uuid
+  createdAt        DateTime @default(now())
+  isArchived       Boolean  @default(false)
+  closureReportUrl String?  // URL to final closure report PDF
+
+  // Relations
+  fir                  Fir                    @relation(fields: [firId], references: [id])
+  state                CurrentCaseState?
+  stateHistory         CaseStateHistory[]
+  assignments          CaseAssignment[]
+  accused              Accused[]
+  investigationEvents  InvestigationEvent[]
+  evidence             Evidence[]
+  witnesses            Witness[]
+  documents            Document[]
+  documentRequests      DocumentRequest[]
+  documentChecklists   DocumentChecklist[]
+  bailRecords          BailRecord[]
+  courtSubmissions     CourtSubmission[]
+  courtActions         CourtAction[]
+  caseReopenRequests    CaseReopenRequest[]
+
+  @@index([firId])
+  @@map("cases")
+}
+
+model CaseReopenRequest {
+  id           String           @id @default(uuid()) @db.Uuid
+  caseId       String           @db.Uuid
+  requestedBy  String           @db.Uuid
+  reviewedBy   String?          @db.Uuid
+  status       CaseReopenStatus @default(REQUESTED)
+  policeReason String
+  judgeNote    String?
+  createdAt    DateTime         @default(now())
+  decidedAt    DateTime?
+
+  // Relations
+  case Case @relation(fields: [caseId], references: [id])
+  requester User @relation("CaseReopenRequestedBy", fields: [requestedBy], references: [id])
+  reviewer User? @relation("CaseReopenReviewedBy", fields: [reviewedBy], references: [id])
+
+  @@index([caseId])
+  @@index([requestedBy])
+  @@index([reviewedBy])
+  @@map("case_reopen_requests")
+}
+
+model CurrentCaseState {
+  caseId       String    @id @db.Uuid
+  currentState CaseState
+  updatedAt    DateTime  @default(now())
+
+  // Relations
+  case Case @relation(fields: [caseId], references: [id])
+
+  @@map("case_states")
+}
+
+model CaseStateHistory {
+  id           String    @id @default(uuid()) @db.Uuid
+  caseId       String    @db.Uuid
+  fromState    CaseState
+  toState      CaseState
+  changedBy    String    @db.Uuid
+  changeReason String
+  changedAt    DateTime  @default(now())
+
+  // Relations
+  case Case @relation(fields: [caseId], references: [id])
+  user User @relation("StateChangedBy", fields: [changedBy], references: [id])
+
+  @@index([caseId])
+  @@index([changedBy])
+  @@map("case_state_history")
+}
+
+model CaseAssignment {
+  id               String    @id @default(uuid()) @db.Uuid
+  caseId           String    @db.Uuid
+  assignedTo       String    @db.Uuid
+  assignedBy       String    @db.Uuid
+  assignmentReason String
+  assignedAt       DateTime  @default(now())
+  unassignedAt     DateTime?
+
+  // Relations
+  case         Case @relation(fields: [caseId], references: [id])
+  assignedUser User @relation("AssignedTo", fields: [assignedTo], references: [id])
+  assignerUser User @relation("AssignedBy", fields: [assignedBy], references: [id])
+
+  @@index([caseId])
+  @@index([assignedTo])
+  @@index([assignedBy])
+  @@map("case_assignments")
+}
+
+model Accused {
+  id     String        @id @default(uuid()) @db.Uuid
+  caseId String        @db.Uuid
+  name   String
+  status AccusedStatus
+
+  // Relations
+  case        Case         @relation(fields: [caseId], references: [id])
+  bailRecords BailRecord[]
+
+  @@index([caseId])
+  @@map("accused")
+}
+
+model InvestigationEvent {
+  id          String                  @id @default(uuid()) @db.Uuid
+  caseId      String                  @db.Uuid
+  eventType   InvestigationEventType
+  description String
+  performedBy String                  @db.Uuid
+  eventDate   DateTime
+
+  // Relations
+  case Case @relation(fields: [caseId], references: [id])
+  user User @relation("PerformedBy", fields: [performedBy], references: [id])
+
+  @@index([caseId])
+  @@index([performedBy])
+  @@map("investigation_events")
+}
+
+model Evidence {
+  id         String           @id @default(uuid()) @db.Uuid
+  caseId     String           @db.Uuid
+  category   EvidenceCategory
+  fileUrl    String
+  fileName   String?          // Metadata for display/download
+  mimeType   String?          // Metadata for icon/handling
+  uploadedBy String           @db.Uuid
+  uploadedAt DateTime         @default(now())
+
+  // Relations
+  case Case @relation(fields: [caseId], references: [id])
+  user User @relation("UploadedBy", fields: [uploadedBy], references: [id])
+
+  @@index([caseId])
+  @@index([uploadedBy])
+  @@map("evidence")
+}
+
+model Witness {
+  id                String  @id @default(uuid()) @db.Uuid
+  caseId            String  @db.Uuid
+  name              String
+  contact           String?
+  address           String?
+  statementFileUrl  String?
+
+  // Relations
+  case Case @relation(fields: [caseId], references: [id])
+
+  @@index([caseId])
+  @@map("witnesses")
+}
+
+model Document {
+  id           String         @id @default(uuid()) @db.Uuid
+  caseId       String         @db.Uuid
+  documentType DocumentType
+  version      Int
+  status       DocumentStatus
+  contentJson  Json
+  createdBy    String         @db.Uuid
+  createdAt    DateTime       @default(now())
+
+  // Relations
+  case Case @relation(fields: [caseId], references: [id])
+  user User @relation("CreatedBy", fields: [createdBy], references: [id])
+
+  @@index([caseId])
+  @@index([createdBy])
+  @@map("documents")
+}
+
+model DocumentChecklist {
+  id               String  @id @default(uuid()) @db.Uuid
+  caseId           String  @db.Uuid
+  requiredDocument String
+  isUploaded       Boolean @default(false)
+
+  // Relations
+  case Case @relation(fields: [caseId], references: [id])
+
+  @@index([caseId])
+  @@map("document_checklists")
+}
+
+model BailRecord {
+  id               String     @id @default(uuid()) @db.Uuid
+  caseId           String     @db.Uuid
+  accusedId        String     @db.Uuid
+  bailType         BailType
+  status           BailStatus
+  orderDocumentUrl String
+  createdAt        DateTime   @default(now())
+
+  // Relations
+  case    Case    @relation(fields: [caseId], references: [id])
+  accused Accused @relation(fields: [accusedId], references: [id])
+
+  @@index([caseId])
+  @@index([accusedId])
+  @@map("bail_records")
+}
+
+model CourtSubmission {
+  id                String                 @id @default(uuid()) @db.Uuid
+  caseId            String                 @db.Uuid
+  submissionVersion Int
+  submittedBy       String                 @db.Uuid
+  courtId           String                 @db.Uuid
+  submittedAt       DateTime               @default(now())
+  status            CourtSubmissionStatus
+
+  // Relations
+  case            Case             @relation(fields: [caseId], references: [id])
+  user            User             @relation("SubmittedBy", fields: [submittedBy], references: [id])
+  court           Court            @relation(fields: [courtId], references: [id])
+  acknowledgement Acknowledgement?
+
+  @@index([caseId])
+  @@index([submittedBy])
+  @@index([courtId])
+  @@map("court_submissions")
+}
+
+model Acknowledgement {
+  id           String   @id @default(uuid()) @db.Uuid
+  submissionId String   @unique @db.Uuid
+  ackNumber    String
+  ackTime      DateTime
+
+  // Relations
+  courtSubmission CourtSubmission @relation(fields: [submissionId], references: [id])
+
+  @@index([submissionId])
+  @@map("acknowledgements")
+}
+
+model CourtAction {
+  id           String           @id @default(uuid()) @db.Uuid
+  caseId       String           @db.Uuid
+  actionType   CourtActionType
+  orderFileUrl String?
+  actionDate   DateTime
+
+  // Relations
+  case Case @relation(fields: [caseId], references: [id])
+
+  @@index([caseId])
+  @@map("court_actions")
+}
+
+model DocumentRequest {
+  id            String                 @id @default(uuid()) @db.Uuid
+  caseId        String                 @db.Uuid
+  requestedBy   String                 @db.Uuid
+  approvedBy    String?                @db.Uuid
+  issuedBy      String?                @db.Uuid
+  documentType  DocumentRequestType
+  status        DocumentRequestStatus
+  requestReason String
+  issuedFileUrl String?
+  remarks       String?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  // Relations
+  case     Case  @relation(fields: [caseId], references: [id])
+  requester User @relation("DocumentRequestsCreatedBy", fields: [requestedBy], references: [id])
+  approver  User? @relation("DocumentRequestsApprovedBy", fields: [approvedBy], references: [id])
+  issuer    User? @relation("DocumentRequestsIssuedBy", fields: [issuedBy], references: [id])
+
+  @@index([caseId])
+  @@index([requestedBy])
+  @@index([approvedBy])
+  @@index([issuedBy])
+  @@map("document_requests")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  action    String
+  entity    String
+  entityId  String
+  timestamp DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entity])
+  @@index([timestamp])
+  @@map("audit_logs")
+}
+
+model AccessLog {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @db.Uuid
+  resourceAccessed String
+  timestamp        DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([timestamp])
+  @@map("access_logs")
+}
