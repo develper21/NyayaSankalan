@@ -1,0 +1,115 @@
+{% set current_date = date or "________________" %}
+CHARGE SHEET
+
+OFFICE OF THE STATION HOUSE OFFICER
+{{ police_station or "________________" }}
+
+Charge Sheet No.: {{ charge_sheet_number or "________________" }}
+FIR No.: {{ fir_number or "________________" }}
+Date: {{ current_date }}
+Police Station: {{ police_station or "________________" }}
+
+To,
+The Honorable {{ court_name or "Chief Judicial Magistrate" }}
+{{ court_location or "________________" }}
+
+Subject: Submission of Charge Sheet under Section 173 CrPC
+
+Respectfully submitted,
+
+1. CASE DETAILS:
+   FIR Number: {{ fir_number or "________________" }}
+   Date of Registration: {{ fir_date or "________________" }}
+   Sections Applied: {{ sections or "________________" }}
+   {% if bns_sections %}
+   BNS Sections: {{ bns_sections }}
+   {% endif %}
+
+2. BRIEF FACTS OF THE CASE:
+{{ case_facts or "________________" }}
+
+3. INVESTIGATION CONDUCTED:
+   - Date of commencement: {{ investigation_start or "________________" }}
+   - Date of completion: {{ investigation_end or "________________" }}
+   - Investigating Officer: {{ io_name or "________________" }}
+   
+{% if investigation_details %}
+{{ investigation_details }}
+{% endif %}
+
+4. ACCUSED DETAILS:
+{% if accused_list %}
+{% for accused in accused_list %}
+   {{ loop.index }}. Name: {{ accused.name }}
+      Father's Name: {{ accused.father_name }}
+      Age/DOB: {{ accused.age }}
+      Address: {{ accused.address }}
+      Current Status: {{ accused.status }}
+      {% if accused.arrest_date %}
+      Date of Arrest: {{ accused.arrest_date }}
+      {% endif %}
+{% endfor %}
+{% else %}
+   1. Name: ________________
+      Father's Name: ________________
+      Age: ________________
+      Address: ________________
+{% endif %}
+
+5. EVIDENCE COLLECTED:
+{% if evidence_list %}
+{% for evidence in evidence_list %}
+   {{ loop.index }}. {{ evidence.type }}: {{ evidence.description }}
+{% endfor %}
+{% else %}
+   Evidence details are annexed separately as Evidence List.
+{% endif %}
+
+6. WITNESS LIST:
+{% if witness_list %}
+{% for witness in witness_list %}
+   {{ loop.index }}. {{ witness.name }} - {{ witness.role }}
+{% endfor %}
+{% else %}
+   Witness details are annexed separately as Witness List.
+{% endif %}
+
+7. SECTIONS OF LAW:
+   The accused {{ accused_name or "________________" }} has committed offences punishable under:
+   {% if sections %}
+   {{ sections }}
+   {% else %}
+   ________________
+   {% endif %}
+   
+   {% if section_justification %}
+   {{ section_justification }}
+   {% endif %}
+
+8. CONCLUSION:
+   Based on the investigation conducted and evidence collected, it is prayed that 
+   cognizance may kindly be taken against the accused and appropriate proceedings 
+   may be initiated as per law.
+
+9. DOCUMENTS ENCLOSED:
+   {% if documents %}
+   {% for doc in documents %}
+   {{ loop.index }}. {{ doc }}
+   {% endfor %}
+   {% else %}
+   1. Copy of FIR
+   2. Evidence List
+   3. Witness Statements
+   4. Seized Articles/Evidence
+   5. Medical Reports (if any)
+   6. Expert Reports (if any)
+   {% endif %}
+
+Date: {{ current_date }}
+Place: {{ place or "________________" }}
+
+                                            Submitted by,
+                                            
+                                            {{ io_name or "________________" }}
+                                            {{ io_designation or "Investigating Officer" }}
+                                            {{ police_station or "________________" }}
