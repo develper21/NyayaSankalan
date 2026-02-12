@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+venv/
+ENV/
+env/
+
+# Storage - All generated files and indexes
+storage/
+*.index
+*.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Model files
+*.bin
+*.pt
+*.pth
+*.onnx
+*.h5
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
