@@ -1,0 +1,89 @@
+WITNESS LIST
+
+Case No.: {{ case_number or "________________" }}
+FIR No.: {{ fir_number or "________________" }}
+Police Station: {{ police_station or "________________" }}
+Date: {{ date or "________________" }}
+
+================================================================================
+
+LIST OF WITNESSES
+
+{% if witnesses %}
+{% for witness in witnesses %}
+WITNESS #{{ loop.index }}
+---------------------------------------------------------
+Name: {{ witness.name }}
+Father's/Husband's Name: {{ witness.father_name or "________________" }}
+Age: {{ witness.age or "________________" }}
+Occupation: {{ witness.occupation or "________________" }}
+Address: {{ witness.address or "________________" }}
+Contact: {{ witness.contact or "________________" }}
+
+Type of Witness: {{ witness.type or "Eye Witness" }}
+{% if witness.relation %}
+Relation to Case: {{ witness.relation }}
+{% endif %}
+
+Statement Recorded: {% if witness.statement_recorded %}Yes{% else %}No{% endif %}
+{% if witness.statement_date %}
+Date of Statement: {{ witness.statement_date }}
+{% endif %}
+
+Key Points of Testimony:
+{{ witness.testimony or "________________" }}
+
+{% if witness.documents %}
+Documents Provided:
+{% for doc in witness.documents %}
+- {{ doc }}
+{% endfor %}
+{% endif %}
+
+{% endfor %}
+{% else %}
+WITNESS #1
+---------------------------------------------------------
+Name: ________________
+Father's/Husband's Name: ________________
+Age: ________________
+Occupation: ________________
+Address: ________________
+Contact: ________________
+Type: Eye Witness
+Statement Recorded: Yes/No
+
+WITNESS #2
+---------------------------------------------------------
+Name: ________________
+Father's/Husband's Name: ________________
+Age: ________________
+Occupation: ________________
+Address: ________________
+Contact: ________________
+Type: Expert Witness
+Statement Recorded: Yes/No
+{% endif %}
+
+================================================================================
+
+SUMMARY:
+Total Witnesses: {{ witnesses|length if witnesses else "________________" }}
+Eye Witnesses: {{ eye_witness_count or "________________" }}
+Expert Witnesses: {{ expert_witness_count or "________________" }}
+Character Witnesses: {{ character_witness_count or "________________" }}
+
+================================================================================
+
+CERTIFICATION:
+
+All witnesses listed above have been examined and their statements have been 
+recorded as per Section 161 CrPC. The witnesses are ready to depose before 
+the Honorable Court.
+
+Date: {{ date or "________________" }}
+Place: {{ place or "________________" }}
+
+                                            {{ io_name or "________________" }}
+                                            {{ io_designation or "Investigating Officer" }}
+                                            {{ police_station or "________________" }}
