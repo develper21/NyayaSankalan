@@ -1,0 +1,98 @@
+EVIDENCE LIST
+
+Case No.: {{ case_number or "________________" }}
+FIR No.: {{ fir_number or "________________" }}
+Police Station: {{ police_station or "________________" }}
+Date: {{ date or "________________" }}
+
+================================================================================
+
+LIST OF EVIDENCE SEIZED/COLLECTED DURING INVESTIGATION
+
+{% if evidence_items %}
+{% for item in evidence_items %}
+{{ loop.index }}. EVIDENCE ITEM #{{ loop.index }}
+   ---------------------------------------------------------
+   Category: {{ item.category or "Physical Evidence" }}
+   Description: {{ item.description }}
+   {% if item.seized_from %}
+   Seized From: {{ item.seized_from }}
+   {% endif %}
+   {% if item.seizure_date %}
+   Date of Seizure: {{ item.seizure_date }}
+   {% endif %}
+   {% if item.location %}
+   Location: {{ item.location }}
+   {% endif %}
+   {% if item.quantity %}
+   Quantity: {{ item.quantity }}
+   {% endif %}
+   {% if item.condition %}
+   Condition: {{ item.condition }}
+   {% endif %}
+   Chain of Custody: {{ item.custody or "Maintained as per protocol" }}
+   Storage Location: {{ item.storage or "Evidence Room" }}
+   {% if item.file_url %}
+   Photo/Document: {{ item.file_url }}
+   {% endif %}
+   
+{% endfor %}
+{% else %}
+1. PHYSICAL EVIDENCE
+   Description: ________________
+   Seized From: ________________
+   Date: ________________
+   
+2. DOCUMENTARY EVIDENCE
+   Description: ________________
+   Source: ________________
+   Date: ________________
+
+3. DIGITAL EVIDENCE
+   Description: ________________
+   Device: ________________
+   Date: ________________
+{% endif %}
+
+================================================================================
+
+FORENSIC REPORTS:
+{% if forensic_reports %}
+{% for report in forensic_reports %}
+- {{ report.type }}: {{ report.description }}
+  Report Date: {{ report.date }}
+  Conclusion: {{ report.conclusion }}
+{% endfor %}
+{% else %}
+1. ________________
+2. ________________
+{% endif %}
+
+================================================================================
+
+MEDICAL REPORTS:
+{% if medical_reports %}
+{% for report in medical_reports %}
+- Patient: {{ report.patient }}
+  Date: {{ report.date }}
+  Findings: {{ report.findings }}
+  Doctor: {{ report.doctor }}
+{% endfor %}
+{% else %}
+1. ________________
+{% endif %}
+
+================================================================================
+
+CERTIFICATION:
+
+I hereby certify that the above evidence has been collected, preserved, and 
+maintained in accordance with legal procedures and the chain of custody has 
+been properly documented.
+
+Date: {{ date or "________________" }}
+Place: {{ place or "________________" }}
+
+                                            {{ io_name or "________________" }}
+                                            {{ io_designation or "Investigating Officer" }}
+                                            {{ police_station or "________________" }}
